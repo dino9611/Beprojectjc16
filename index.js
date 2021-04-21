@@ -4,7 +4,7 @@ const cors = require("cors");
 require("dotenv").config();
 app.use(
   cors({
-    exposedHeaders: ["Content-Length", "tokenAccess", "tokenRefresh"], // exposed hear untuk token
+    exposedHeaders: ["Content-Length", "x-token-access", "x-token-refresh"], // exposed hear untuk token
   })
 );
 const bearerToken = require("express-bearer-token");
