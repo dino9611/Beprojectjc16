@@ -77,7 +77,7 @@ module.exports = {
         res.set("x-token-access", tokenAccess);
         res.set("x-token-refresh", tokenRefresh);
         // kriim data
-        return res.status(200).send(datauser[0]);
+        return res.status(200).send({ ...datauser[0], cart: [] });
       }
     } catch (error) {
       console.log(error);

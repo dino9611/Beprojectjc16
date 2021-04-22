@@ -38,9 +38,9 @@ const uploader = (destination, filenamePrefix) => {
   return multer({
     storage: storage,
     fileFilter: imageFilter,
-    limits: {
-      fileSize: 1 * 1024 * 1024, // 1MB
-    },
+    // limits: {
+    //   fileSize: 1 * 1024 * 1024, // 1MB
+    // },
   });
 };
 

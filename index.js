@@ -4,7 +4,12 @@ const cors = require("cors");
 require("dotenv").config();
 app.use(
   cors({
-    exposedHeaders: ["Content-Length", "x-token-access", "x-token-refresh"], // exposed hear untuk token
+    exposedHeaders: [
+      "Content-Length",
+      "x-token-access",
+      "x-token-refresh",
+      "x-total-count",
+    ], // exposed header untuk token
   })
 );
 const bearerToken = require("express-bearer-token");
@@ -30,8 +35,9 @@ app.get("/", (req, res) => {
   res.send("<h1>selamat datang di API 1.0 EmerceApp</h1>");
 });
 
-const { AuthRoutes } = require("./src/routes");
+const { AuthRoutes, ProductsRoutes } = require("./src/routes");
 app.use("/auth", AuthRoutes);
+app.use("/product", ProductsRoutes);
 
 app.all("*", (req, res) => {
   res.status(404).send("resource not found");
