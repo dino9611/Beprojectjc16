@@ -7,7 +7,9 @@ module.exports = {
     if (!pages || !limit) {
       return res.status(400).send({ message: "bad request" });
     }
-    let sql = `select p.*,c.name as namacategory from products p join category c on p.category_id=c.id limit ${mysqldb.escape(
+    let sql = `select p.*,c.name as namacategory,sum(i.qty)as qty from products p 
+    join category c on p.category_id=c.id
+    join inventory i on p.idproducts = i.products_id group by p.idproducts limit ${mysqldb.escape(
       (parseInt(pages) - 1) * 5
     )},${mysqldb.escape(parseInt(limit))}`;
     mysqldb.query(sql, (err, dataproducts) => {
@@ -32,7 +34,6 @@ module.exports = {
         console.log(err);
         return res.status(500).send({ message: "server error" });
       }
-
       return res.status(200).send(category);
     });
   },
@@ -56,10 +57,12 @@ module.exports = {
         const imagePath = imagebg ? path + "/" + imagebg[0].filename : null;
         console.log(imagePath);
         let arr = [];
-        imagedetail.forEach((val) => {
-          let imageDetailPath = val ? path + "/" + val.filename : null;
-          arr.push(imageDetailPath);
-        });
+        if (imagedetail) {
+          imagedetail.forEach((val) => {
+            let imageDetailPath = val ? path + "/" + val.filename : null;
+            arr.push(imageDetailPath);
+          });
+        }
         const data = JSON.parse(req.body.data);
         const datainsert = {
           name: data.name,
@@ -85,7 +88,21 @@ module.exports = {
               });
               return res.status(500).send(err);
             }
-            return res.status(200).send({ message: "berhasil" });
+            var insertinvent = {
+              qty: data.qty,
+              products_id: result.insertId,
+            };
+            // console.log(insertinvent)
+            mysqldb.query(
+              `insert into inventory set ?`,
+              insertinvent,
+              (err) => {
+                if (err) {
+                  return res.status(500).send(err);
+                }
+                return res.status(200).send({ message: "berhasil" });
+              }
+            );
           }
         );
       });
@@ -93,5 +110,33 @@ module.exports = {
       console.log(error);
       return res.status(500).send({ message: "server error" });
     }
+  },
+  deleteProducts: (req, res) => {
+    const { id } = req.params;
+    let sql = `select * from products where idproducts= ?`;
+    mysqldb.query(sql, [id], (err, result) => {
+      if (err) {
+        console.log(err);
+        return res.status(500).send({ message: "server error" });
+      }
+      sql = `delete from products where idproducts = ?`;
+      mysqldb.query(sql, [id], (err) => {
+        if (err) {
+          console.log(err);
+          return res.status(500).send({ message: "server error" });
+        }
+        if (result[0].image) {
+          // hapus foto di dalam server api jika image tidak null
+          fs.unlinkSync("./public" + result[0].image);
+        }
+        let image_detail = JSON.parse(result[0].image_detail);
+        if (image_detail.length) {
+          image_detail.forEach((val) => {
+            fs.unlinkSync("./public" + val);
+          });
+        }
+        return res.status(200).send({ message: "berhasil" });
+      });
+    });
   },
 };
