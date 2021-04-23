@@ -20,6 +20,7 @@ module.exports = {
             console.log(err);
             return res.status(500).send({ message: "server error" });
           }
+          // jika barangnya sudah ada maka update qty
           if (isicart.length) {
             //   kita check apakah penambahan kuantity akan melebihi qty di inventory
             sql = `select sum(qty) as total from inventory where products_id = ?;`;
@@ -45,7 +46,7 @@ module.exports = {
                   return res.status(500).send({ message: "server error" });
                 }
                 //get cart
-                sql = `select p.*,qty from ordersdetail od join products p on od.products_id = p.idproducts  
+                sql = `select id,p.*,qty from ordersdetail od join products p on od.products_id = p.idproducts  
                         where isdeleted= 0 and orders_id = 
                         (select idorders from orders 
                         where status = 'onCart' 
@@ -71,7 +72,7 @@ module.exports = {
                 return res.status(500).send({ message: "server error" });
               }
               //get cart
-              sql = `select p.*,qty from ordersdetail od join products p on od.products_id = p.idproducts  
+              sql = `select id,p.*,qty from ordersdetail od join products p on od.products_id = p.idproducts  
                 where isdeleted= 0 and orders_id = 
                 (select idorders from orders 
                 where status = 'onCart' 
@@ -128,7 +129,7 @@ module.exports = {
                   });
                 }
                 //get cart
-                sql = `select p.*,qty from ordersdetail od join products p on od.products_id = p.idproducts  
+                sql = `select id,p.*,qty from ordersdetail od join products p on od.products_id = p.idproducts  
                 where isdeleted= 0 and orders_id = 
                 (select idorders from orders 
                 where status = 'onCart' 

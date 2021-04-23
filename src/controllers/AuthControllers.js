@@ -14,6 +14,18 @@ const transporter = require("./../helpers/transporter");
 const dba = promisify(mysqldb.query).bind(mysqldb);
 const jwt = require("jsonwebtoken");
 
+const dbprom = (query, arr = []) => {
+  return new Promise((resolve, reject) => {
+    mysqldb.query(query, arr, (err, result) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(result);
+      }
+    });
+  });
+};
+
 module.exports = {
   Register: async (req, res) => {
     try {
@@ -89,8 +101,15 @@ module.exports = {
       const { idusers } = req.user;
       let sql = `select idusers,username,email,isverified,role from users where idusers = ? `;
       // get data user lagi
-      const datauser = await dba(sql, [idusers]);
-      return res.status(200).send(datauser[0]);
+      const datauser = await dbprom(sql, [idusers]);
+      // get cart user
+      sql = `select id,p.*,qty from ordersdetail od join products p on od.products_id = p.idproducts  
+      where isdeleted= 0 and orders_id = 
+      (select idorders from orders 
+      where status = 'onCart' 
+      and users_id = ?);`;
+      let cart = await dbprom(sql, [idusers]);
+      return res.status(200).send({ ...datauser[0], cart: cart });
     } catch (error) {
       console.log(error);
       return res.status(500).send({ message: "server error" });
@@ -102,6 +121,7 @@ module.exports = {
       if (!emailorusername || !password) {
         return res.status(400).send({ message: "bad request" });
       }
+
       // mysqldb.query(sql,(err,result))
       let sql = `select idusers,username,email,isverified,role from users where (username= ? or email = ?) and password = ? `;
       const datauser = await dba(sql, [
@@ -110,6 +130,13 @@ module.exports = {
         hashpass(password),
       ]);
       if (datauser.length) {
+        // get cart user
+        sql = `select id,p.*,qty from ordersdetail od join products p on od.products_id = p.idproducts  
+        where isdeleted= 0 and orders_id = 
+        (select idorders from orders 
+        where status = 'onCart' 
+        and users_id = ?);`;
+        let cart = await dba(sql, [datauser[0].idusers]);
         let dataToken = {
           idusers: datauser[0].idusers,
           username: datauser[0].username,
@@ -119,7 +146,7 @@ module.exports = {
         res.set("x-token-access", tokenAccess);
         res.set("x-token-refresh", tokenRefresh);
         // kirim data
-        return res.status(200).send(datauser[0]);
+        return res.status(200).send({ ...datauser[0], cart: cart });
       } else {
         return res.status(500).send({ message: "username tidak terdaftar" });
       }
