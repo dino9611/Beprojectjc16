@@ -8,9 +8,12 @@ const {
   getProductsCategory,
   postProducts,
   deleteProducts,
+  getProductsbyid,
 } = productsControllers;
 
 router.get("/admin", getProductsAdmin);
+router.get("/", getProductsAdmin);
+router.get("/:id", getProductsbyid);
 router.get("/category", getProductsCategory);
 router.post("/admin", postProducts);
 router.delete("/admin/:id", deleteProducts);

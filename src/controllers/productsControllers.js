@@ -10,7 +10,7 @@ module.exports = {
     let sql = `select p.*,c.name as namacategory,sum(i.qty)as qty from products p 
     join category c on p.category_id=c.id
     join inventory i on p.idproducts = i.products_id group by p.idproducts limit ${mysqldb.escape(
-      (parseInt(pages) - 1) * 5
+      (parseInt(pages) - 1) * limit
     )},${mysqldb.escape(parseInt(limit))}`;
     mysqldb.query(sql, (err, dataproducts) => {
       if (err) {
@@ -25,6 +25,19 @@ module.exports = {
         res.set("x-total-count", total[0].total);
         return res.status(200).send(dataproducts);
       });
+    });
+  },
+  getProductsbyid: (req, res) => {
+    const { id } = req.params;
+    let sql = `select p.*,c.name as namacategory,sum(i.qty)as qty from products p 
+    join category c on p.category_id=c.id
+    join inventory i on p.idproducts = i.products_id where idproducts= ?  `;
+    mysqldb.query(sql, [parseInt(id)], (err, result) => {
+      if (err) {
+        console.log(err);
+        return res.status(500).send({ message: "server error" });
+      }
+      return res.status(200).send(result[0]);
     });
   },
   getProductsCategory: (req, res) => {

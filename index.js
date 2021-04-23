@@ -2,6 +2,8 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 require("dotenv").config();
+const bearerToken = require("express-bearer-token");
+app.use(bearerToken());
 app.use(
   cors({
     exposedHeaders: [
@@ -12,8 +14,6 @@ app.use(
     ], // exposed header untuk token
   })
 );
-const bearerToken = require("express-bearer-token");
-app.use(bearerToken());
 const PORT = 5000;
 const morgan = require("morgan");
 
@@ -35,9 +35,14 @@ app.get("/", (req, res) => {
   res.send("<h1>selamat datang di API 1.0 EmerceApp</h1>");
 });
 
-const { AuthRoutes, ProductsRoutes } = require("./src/routes");
+const {
+  AuthRoutes,
+  ProductsRoutes,
+  TransactionsRoutes,
+} = require("./src/routes");
 app.use("/auth", AuthRoutes);
 app.use("/product", ProductsRoutes);
+app.use("/trans", TransactionsRoutes);
 
 app.all("*", (req, res) => {
   res.status(404).send("resource not found");
