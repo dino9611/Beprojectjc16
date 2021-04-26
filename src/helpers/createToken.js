@@ -16,4 +16,9 @@ module.exports = {
     const token = jwt.sign(data, key);
     return token;
   },
+  createTokenForget: (data) => {
+    const key = "mumen";
+    const token = jwt.sign(data, key, { expiresIn: "10m" });
+    return token;
+  },
 };
