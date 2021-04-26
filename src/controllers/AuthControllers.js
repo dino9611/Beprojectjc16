@@ -103,11 +103,15 @@ module.exports = {
       // get data user lagi
       const datauser = await dbprom(sql, [idusers]);
       // get cart user
-      sql = `select id,p.*,qty from ordersdetail od join products p on od.products_id = p.idproducts  
+      sql = `select id,p.* ,sum(i.qty) as stock ,od.qty
+      from products p 
+      join inventory i on p.idproducts = i.products_id
+      join ordersdetail od on p.idproducts = od.products_id 
       where isdeleted= 0 and orders_id = 
-      (select idorders from orders 
-      where status = 'onCart' 
-      and users_id = ?);`;
+                      (select idorders from orders 
+                      where status = 'onCart' 
+                      and users_id = ?)
+      group by i.products_id`;
       let cart = await dbprom(sql, [idusers]);
       return res.status(200).send({ ...datauser[0], cart: cart });
     } catch (error) {
@@ -131,11 +135,15 @@ module.exports = {
       ]);
       if (datauser.length) {
         // get cart user
-        sql = `select id,p.*,qty from ordersdetail od join products p on od.products_id = p.idproducts  
+        sql = `select id,p.* ,sum(i.qty) as stock ,od.qty
+        from products p 
+        join inventory i on p.idproducts = i.products_id
+        join ordersdetail od on p.idproducts = od.products_id 
         where isdeleted= 0 and orders_id = 
-        (select idorders from orders 
-        where status = 'onCart' 
-        and users_id = ?);`;
+                        (select idorders from orders 
+                        where status = 'onCart' 
+                        and users_id = ?)
+        group by i.products_id`;
         let cart = await dba(sql, [datauser[0].idusers]);
         let dataToken = {
           idusers: datauser[0].idusers,
