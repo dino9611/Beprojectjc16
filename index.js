@@ -34,7 +34,12 @@ app.use(express.static("public"));
 app.get("/", (req, res) => {
   res.send("<h1>selamat datang di API 1.0 EmerceApp</h1>");
 });
+// const schedule = require("node-schedule");
 
+// schedule.scheduleJob("*/10 * * * * *", function (firedate) {
+//   console.log("The answer to life, the universe, and everything!" + firedate);
+
+// });
 const {
   AuthRoutes,
   ProductsRoutes,

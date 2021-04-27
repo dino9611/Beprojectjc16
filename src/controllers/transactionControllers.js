@@ -4,7 +4,8 @@ const dba = promisify(mysqldb.query).bind(mysqldb);
 const dbtransaction = promisify(mysqldb.beginTransaction).bind(mysqldb);
 const dbrollback = promisify(mysqldb.rollback).bind(mysqldb);
 const dbcommit = promisify(mysqldb.commit).bind(mysqldb);
-
+const { uploader } = require("./../lib");
+const fs = require("fs");
 Date.prototype.addDays = function (days) {
   var date = new Date(this.valueOf());
   date.setDate(date.getDate() + days);
@@ -61,7 +62,7 @@ module.exports = {
                 from products p 
                 join inventory i on p.idproducts = i.products_id
                 join ordersdetail od on p.idproducts = od.products_id 
-                where isdeleted= 0 and orders_id = 
+                where isdeleted= 0 and od.orders_id = 
                                 (select idorders from orders 
                                 where status = 'onCart' 
                                 and users_id = ?)
@@ -91,7 +92,7 @@ module.exports = {
               from products p 
               join inventory i on p.idproducts = i.products_id
               join ordersdetail od on p.idproducts = od.products_id 
-              where isdeleted= 0 and orders_id = 
+              where isdeleted= 0 and od.orders_id = 
                               (select idorders from orders 
                               where status = 'onCart' 
                               and users_id = ?)
@@ -183,7 +184,7 @@ module.exports = {
        from products p 
        join inventory i on p.idproducts = i.products_id
        join ordersdetail od on p.idproducts = od.products_id 
-       where isdeleted= 0 and orders_id = 
+       where isdeleted= 0 and od.orders_id = 
                        (select idorders from orders 
                        where status = 'onCart' 
                        and users_id = ?)
@@ -209,7 +210,7 @@ module.exports = {
        from products p 
        join inventory i on p.idproducts = i.products_id
        join ordersdetail od on p.idproducts = od.products_id 
-       where isdeleted= 0 and orders_id = 
+       where isdeleted= 0 and od.orders_id = 
                        (select idorders from orders 
                        where status = 'onCart' 
                        and users_id = ?)
@@ -231,7 +232,7 @@ module.exports = {
       console.log(orders);
       let idorders = orders[0].idorders;
       // get ordersdetail base on orders_id
-      sql = `select od.id,p.price from ordersdetail od
+      sql = `select od.id,p.price,od.qty,od.products_id from ordersdetail od
       join products p on od.products_id = p.idproducts
       where isdeleted=0 and orders_id = ?`;
       let ordersdetail = await dba(sql, [idorders]);
@@ -252,16 +253,23 @@ module.exports = {
         let dataupdate = {
           price: val.price,
         };
-        console.log(val);
         arr.push(dba(sql, [dataupdate, val.id]));
       });
+
+      let insertManyInvent = ordersdetail.map((val) => [
+        -1 * val.qty,
+        val.products_id,
+        idorders,
+      ]); // ini jadi array 2 dimensi exp: [[]]
+      sql = "INSERT INTO inventory (qty, products_id,orders_id) VALUES ?";
+      await dba(sql, [insertManyInvent]);
       await Promise.all(arr);
       await dbcommit();
       sql = `select id,p.* ,sum(i.qty) as stock ,od.qty
             from products p 
             join inventory i on p.idproducts = i.products_id
             join ordersdetail od on p.idproducts = od.products_id 
-            where isdeleted= 0 and orders_id = 
+            where isdeleted= 0 and od.orders_id = 
                             (select idorders from orders 
                             where status = 'onCart' 
                             and users_id = ?)
@@ -277,10 +285,10 @@ module.exports = {
   getHistory: async (req, res) => {
     let { idusers } = req.params;
     try {
-      let sql = `select * from orders  where status in ('waiting payment') and users_id = ?`;
+      let sql = `select * from orders  where status in ('waiting payment','waitingVerification') and users_id = ?`;
       let history = await dba(sql, [idusers]); // array
       let arr = [];
-      sql = `select od.*,p.name,p.image from ordersdetail od join products p on od.products_id = p.idproducts  where orders_id=?`;
+      sql = `select od.*,p.name,p.image from ordersdetail od join products p on od.products_id = p.idproducts  where orders_id=? and isdeleted = 0`;
       history.forEach((val) => {
         arr.push(dba(sql, [val.idorders]));
       });
@@ -291,6 +299,79 @@ module.exports = {
       }
       return res.status(200).send(history);
     } catch (error) {
+      console.error(error);
+      return res.status(500).send({ message: "server error" });
+    }
+  },
+  getbanksandAlamat: async (req, res) => {
+    try {
+      const { idusers } = req.params;
+      let sql = `select * from banks`;
+      let banks = await dba(sql);
+      sql = `select * from alamat where users_id = ?`;
+      let alamat = await dba(sql, [idusers]);
+      return res.status(200).send({ banks, alamat });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).send({ message: "server error" });
+    }
+  },
+  bayar: (req, res) => {
+    try {
+      const { idorders } = req.params;
+      const path = "/trans"; //ini terserah
+
+      const upload = uploader(path, "Trans").fields([{ name: "bukti" }]);
+      upload(req, res, async (err) => {
+        if (err) {
+          return res
+            .status(500)
+            .json({ message: "Upload picture failed !", error: err.message });
+        }
+        console.log("berhasil upload");
+        console.log(req.files);
+        const { bukti } = req.files;
+        const imagePath = bukti ? path + "/" + bukti[0].filename : null;
+        console.log(imagePath);
+        const data = JSON.parse(req.body.data);
+        const dataUpdate = {
+          tujuan: data.tujuan,
+          bank_id: data.bank_id,
+          status: "waitingVerification",
+          buktipembayaran: imagePath,
+        };
+        try {
+          let sql = "update orders set ? where idorders = ?";
+          await dba(sql, [dataUpdate, idorders]);
+          return res.status(200).send({ message: "berhasil" });
+        } catch (error) {
+          console.log(error);
+          if (imagePath) {
+            fs.unlinkSync("./public" + imagePath);
+          }
+          return res.status(500).send({ message: "server error" });
+        }
+      });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).send({ message: "server error" });
+    }
+  },
+  batal: async (req, res) => {
+    try {
+      const { idorders } = req.query;
+      await dbtransaction();
+      let sql = `update orders set ? where idorders = ?`;
+      let dataupdate = {
+        status: "Cancelled",
+      };
+      await dba(sql, [dataupdate, idorders]);
+      sql = `delete from inventory where orders_id = ?`;
+      await dba(sql, [idorders]);
+      await dbcommit();
+      return res.status(200).send({ message: "berhasil update and delete" });
+    } catch (error) {
+      await dbrollback();
       console.error(error);
       return res.status(500).send({ message: "server error" });
     }

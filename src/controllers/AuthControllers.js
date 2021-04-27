@@ -108,7 +108,7 @@ module.exports = {
       from products p 
       join inventory i on p.idproducts = i.products_id
       join ordersdetail od on p.idproducts = od.products_id 
-      where isdeleted= 0 and orders_id = 
+      where isdeleted= 0 and od.orders_id = 
                       (select idorders from orders 
                       where status = 'onCart' 
                       and users_id = ?)
@@ -140,7 +140,7 @@ module.exports = {
         from products p 
         join inventory i on p.idproducts = i.products_id
         join ordersdetail od on p.idproducts = od.products_id 
-        where isdeleted= 0 and orders_id = 
+        where isdeleted= 0 and od.orders_id = 
                         (select idorders from orders 
                         where status = 'onCart' 
                         and users_id = ?)
