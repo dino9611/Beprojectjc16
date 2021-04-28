@@ -152,4 +152,24 @@ module.exports = {
       });
     });
   },
+  latihan: (req, res) => {
+    const { minprice, tahun, categoryid } = req.query;
+    let sql = `select * from products p join category c on p.category_id = c.id where NOT idproducts=0 `;
+    if (minprice) {
+      sql += `and price >= ${mysqldb.escape(minprice)} `; //dikasih spasi diujung
+    }
+    if (tahun) {
+      sql += `and tahun = ${mysqldb.escape(tahun)} `;
+    }
+    if (categoryid) {
+      sql += `and category_id = ${mysqldb.escape(categoryid)}`;
+    }
+    mysqldb.query(sql, (err, prod) => {
+      if (err) {
+        console.log(err);
+        return res.status(500).send({ message: "server error" });
+      }
+      return res.status(200).send(prod);
+    });
+  },
 };

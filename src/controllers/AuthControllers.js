@@ -215,4 +215,15 @@ module.exports = {
       return res.status(500).send({ message: "server error" });
     }
   },
+  TambahAlamat: async (req, res) => {
+    const { idusers } = req.params;
+    const { alamat } = req.body;
+    let sql = `insert into alamat set ? `;
+    let datainsert = {
+      alamat,
+      users_id: idusers,
+    };
+    await dba(sql, datainsert);
+    return res.status(200).send({ message: "created" });
+  },
 };
