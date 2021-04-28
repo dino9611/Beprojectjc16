@@ -376,4 +376,35 @@ module.exports = {
       return res.status(500).send({ message: "server error" });
     }
   },
+  getOrders: async (req, res) => {
+    const { sort } = req.query;
+    let sql = `select o.idorders,o.status,b.name as bank ,u.username, o.expired
+    from orders o left join 
+    banks b on o.bank_id = b.banks_id
+    join users u on o.users_id = u.idusers 
+    order by field(o.status,'onCart','waitingVerification','Cancelled')`;
+    if (sort === "desc") {
+      sql += sort;
+    }
+    mysqldb.query(sql, (err, result) => {
+      if (err) {
+        console.log(err);
+        return res.status(500).send({ message: "server error" });
+      }
+      return res.status(200).send(result);
+    });
+  },
+  getWaitingVerification: async (req, res) => {
+    try {
+      let sql = `select sum(price*qty) as total,idorders,buktipembayaran from ordersdetail od 
+      join orders o  on od.orders_id=o.idorders
+      where status= 'waitingVerification' and od.isdeleted = 0 
+      group by od.orders_id `;
+      let orders = await dba(sql);
+      return res.status(200).send(orders);
+    } catch (error) {
+      console.log(error);
+      return res.status(500).send({ message: "server error" });
+    }
+  },
 };

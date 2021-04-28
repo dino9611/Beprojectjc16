@@ -3,8 +3,7 @@ const router = express.Router();
 
 const { transactionControllers } = require("./../controllers");
 const { verifyTokenAccess, checkid } = require("./../helpers/verifyToken");
-const { response } = require("express");
-const { token } = require("morgan");
+
 const {
   AddToCart,
   DeleteCart,
@@ -14,6 +13,8 @@ const {
   getbanksandAlamat,
   bayar,
   batal,
+  getOrders,
+  getWaitingVerification,
 } = transactionControllers;
 
 router.post("/cart", verifyTokenAccess, checkid, AddToCart);
@@ -23,7 +24,10 @@ router.put("/checkout", verifyTokenAccess, checkid, checkOut);
 router.get("/history/:idusers", getHistory);
 router.get("/banksAlamat/:idusers", getbanksandAlamat);
 router.post("/bayar/:idorders", verifyTokenAccess, bayar);
-router.post("/batal", verifyTokenAccess, bayar);
+router.delete("/batal", verifyTokenAccess, batal);
+router.get("/orders", getOrders);
+router.get("/verif", getWaitingVerification);
+module.exports = router;
 
 // `select * from product p join category on p.ca where `
 // if(minprice)
@@ -61,5 +65,3 @@ router.post("/batal", verifyTokenAccess, bayar);
 // {
 //   message : 'creted'
 // }
-
-module.exports = router;

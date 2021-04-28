@@ -226,4 +226,17 @@ module.exports = {
     await dba(sql, datainsert);
     return res.status(200).send({ message: "created" });
   },
+  ChangeToAdmin: async (req, res) => {
+    try {
+      const { idusers } = req.params;
+      let dataupdate = {
+        role: "admin",
+      };
+      let sql = `update users set ? where idusers = ?`;
+      await dba(sql, [dataupdate, idusers]);
+      return res.status(200).send({ message: "update" });
+    } catch (error) {
+      console.log(error);
+    }
+  },
 };

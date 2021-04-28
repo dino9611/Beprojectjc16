@@ -6,6 +6,8 @@ const {
   verifyTokenAccess,
   verifyEmailforget,
 } = require("./../helpers/verifyToken");
+const { changeUser } = require("../connection/mysqldb");
+
 const {
   Register,
   keeplogin,
@@ -13,6 +15,7 @@ const {
   lupapassword,
   gantipassword,
   TambahAlamat,
+  ChangeToAdmin,
 } = AuthControllers;
 
 router.post("/register", Register);
@@ -21,5 +24,6 @@ router.get("/keeplogin", verifyTokenAccess, keeplogin);
 router.post("/forget", lupapassword);
 router.put("/ganti", verifyEmailforget, gantipassword);
 router.post("/alamat/post/:idusers", verifyTokenAccess, TambahAlamat);
+router.patch("/users/admin/:idusers", verifyTokenAccess, ChangeToAdmin);
 
 module.exports = router;

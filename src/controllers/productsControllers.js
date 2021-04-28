@@ -172,4 +172,21 @@ module.exports = {
       return res.status(200).send(prod);
     });
   },
+  PostRating: (req, res) => {
+    const { rating, products_id, users_id } = req.body;
+    let sql = `insert into rating set ?`;
+    let dataInsert = {
+      rating: rating,
+      products_id,
+      users_id,
+    };
+    mysqldb.query(sql, dataInsert, (err, result) => {
+      if (err) {
+        console.log(err);
+        return res.status(500).send({ message: "server error" });
+      }
+      let idrating = result.insertId;
+      return res.status(200).send({ idrating, message: "success add rating" });
+    });
+  },
 };
